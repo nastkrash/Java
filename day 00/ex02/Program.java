@@ -4,16 +4,14 @@ public class Program {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         if (!sc.hasNextInt()) {
-            System.out.println("IllegalArgument");
+            System.err.println("IllegalArgument");
             System.exit(-1);
         }
         int num = sc.nextInt();
         int coffee_queries = 0;
-        while (num != 42)
-        {
-            if (num < 2)
-            {
-                System.out.println("IllegalArgument");
+        while (num != 42) {
+            if (num < 2) {
+                System.err.println("IllegalArgument");
                 System.exit(-1);
             }
             int digit_sum = digit_sum_counter(num);
@@ -21,28 +19,23 @@ public class Program {
                 coffee_queries++;
             num = sc.nextInt();
         }
-        System.out.println("Count of coffee - request - " + coffee_queries);
-        
+        System.out.println("Count of coffee-request - " + coffee_queries);
+        sc.close();
+
     }
-    public static int digit_sum_counter(int num){
+
+    public static int digit_sum_counter(int num) {
         int sum = 0;
-        while(num!=0)
-        {
+        while (num != 0) {
             sum += num % 10;
             num /= 10;
         }
         return sum;
-    
+
     }
-    public static boolean is_prime(int num){
-        if (num % 2 == 0)
-        {
-            if (num == 2)
-                return true;
-            else
-                return false;
-        }
-        for (int divider = 3; (long)divider * divider <= num; divider+=2) {
+
+    public static boolean is_prime(int num) {
+        for (int divider = 2; (long) divider * divider <= num; divider++) {
             if (num % divider == 0)
                 return false;
         }
