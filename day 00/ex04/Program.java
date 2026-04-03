@@ -18,10 +18,6 @@ public class Program {
         char[] topChars = new char[10];
         int[] topCounts = new int[10];
 
-        for (int i = 0; i < 10; i++) {
-            topChars[i] = 0;
-            topCounts[i] = 0;
-        }
 
         for (int code = 0; code < frequency.length; code++) {
             if (frequency[code] > 0) {
@@ -60,26 +56,61 @@ public class Program {
     }
 
     public static void printResult(char[] topChars, int[] topCounts) {
-        char[][] resultGrid = new char[12][10];
-        for (int row = 0; row < 12; row++) {
-            for (int col = 0; col < 10; col++) {
-                resultGrid[row][col] = ' ';
-            }
+        int letterCount = 0;
+        for (int i = 0; i < topCounts.length; i++) {
+            if (topCounts[i] == 0)
+                break;
+            letterCount++;
         }
-        for (int j = 0; j < 10; j++)
-            resultGrid[11][j] = topChars[j];
-        double scale = topCounts[0] / 10;
-        for (int j = 0; j < 10; j++) {
-            int height = (int) (topCounts[j] / scale);
+        if (letterCount == 0)
+            return;
+
+        int columns = letterCount * 3;
+        char[][] resultGrid = new char[12][columns];
+        
+        int k = 0;
+        for (int j = 0; j < columns; j+=3){
+            resultGrid[11][j] = ' ';
+            resultGrid[11][j+1] = ' ';
+            resultGrid[11][j+2] = topChars[k];
+            k++;
+        }
+        double scale = (double) topCounts[0] / 10;
+        
+        k = 0;
+        for (int j = 0; j < columns; j+= 3) {
+            int height = (int) (topCounts[k] / scale);
             for (int i = 11 - height; i < 11; i++)
-                resultGrid[i][j] = '#';
-            resultGrid[11 - height - 1][j] = Integer.toString(topCounts[j]);
+                resultGrid[i][j] = ' ';
+            for (int i = 11 - height; i < 11; i++)
+                resultGrid[i][j+1] = ' ';
+            for (int i = 11 - height; i < 11; i++)
+                resultGrid[i][j+2] = '#';
+            String num = Integer.toString(topCounts[k]);
+            if (topCounts[k] < 10){
+                resultGrid[10-height][j] = ' ';
+                resultGrid[10-height][j+1] = ' ';
+                resultGrid[10-height][j+2] = num.charAt(0);
+
+            }
+            else if (topCounts[k] < 100){
+                resultGrid[10-height][j] = ' ';
+                resultGrid[10-height][j+1] = num.charAt(0);
+                resultGrid[10-height][j+2] = num.charAt(1);
+            }
+            else if (topCounts[k] < 999){
+                resultGrid[10-height][j] = num.charAt(0);
+                resultGrid[10-height][j+1] = num.charAt(1);
+                resultGrid[10-height][j+2] = num.charAt(2);
+            }
+            k++;
         }
 
-        for (int i = 0; i < 12; i++)
-            for (int j = 0; j < 10; j++)
+        for (int i = 0; i < 12; i++){
+            for (int j = 0; j < columns; j++)
                 System.out.print(resultGrid[i][j]);
-
+            System.out.print("\n");
+        }
     }
 
 }
