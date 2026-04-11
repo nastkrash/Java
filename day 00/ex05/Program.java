@@ -1,31 +1,48 @@
 import java.util.Scanner;
 
 public class Program {
-	public static void main(String[] args) {
-		private static final int MAX_STUDENTS = 10;
-		private static final int MAX_CLASSES = 10;
-		private static final int MAX_COLUMNS = 50;
+	private static final int MAX_STUDENTS = 10;
+	private static final int MAX_CLASSES = 10;
+	private static final int MAX_COLUMNS = 50;
 
+	public static void main(String[] args) {
 		Scanner sc = new Scanner(System.in);
 
-		String[] students = new String[MAX_STUDENTS];
-		int studentsCount = readStudents(sc, students);
+		try {
+			String[] students = new String[MAX_STUDENTS];
+			int studentsCount = readStudents(sc, students);
 
-		int[] classHours = new int[MAX_CLASSES];
-		int[] classDays = new int[MAX_CLASSES];
-		String[] classDayNames = new String[MAX_CLASSES];
-		int classesCount = readClasses(sc, classHours, classDays, classDayNames);
+			if (studentsCount == 0) {
+				throw new IllegalArgumentException("No students provided.");
+			}
 
-		int[] colHour = new int[MAX_COLUMNS];
-		int[] colDay = new int[MAX_COLUMNS];
-		String[] colDayName = new String[MAX_COLUMNS];
-		int columnsCount = buildColumns(classesCount, classHours, classDays, classDayNames, colHour, colDay, colDayName);
+			int[] classHours = new int[MAX_CLASSES];
+			int[] classDays = new int[MAX_CLASSES];
+			String[] classDayNames = new String[MAX_CLASSES];
+			int classesCount = readClasses(sc, classHours, classDays, classDayNames);
 
-		int[][] attendance = new int[MAX_STUDENTS][MAX_COLUMNS];
-		readAttendance(sc, students, studentsCount, colHour, colDay, columnsCount, attendance);
+			if (classesCount == 0) {
+				throw new IllegalArgumentException("No classes provided.");
+			}
 
-		printTable(students, studentsCount, colHour, colDay, colDayName, columnsCount, attendance);
-		sc.close();
+			int[] colHour = new int[MAX_COLUMNS];
+			int[] colDay = new int[MAX_COLUMNS];
+			String[] colDayName = new String[MAX_COLUMNS];
+			int columnsCount = buildColumns(classesCount, classHours, classDays, classDayNames, colHour, colDay, colDayName);
+
+			if (columnsCount == 0) {
+				throw new IllegalArgumentException("No class dates generated - check class definitions");
+			}
+
+			int[][] attendance = new int[MAX_STUDENTS][MAX_COLUMNS];
+			readAttendance(sc, students, studentsCount, colHour, colDay, columnsCount, attendance);
+
+			printTable(students, studentsCount, colHour, colDay, colDayName, columnsCount, attendance);
+		} catch (Exception e) {
+			System.err.println("Error while processing input: " + e.getMessage());
+		} finally {
+			sc.close();
+		}
 	
 	}
 
@@ -53,13 +70,20 @@ public class Program {
 				break;
 			}
 			if (!sc.hasNext()) {
-				break;
+				throw new IllegalArgumentException("Unexpected end of input while reading classes");
 			}
 			String dayName = sc.next();
 
 			if (count < MAX_CLASSES) {
-				classHours[count] = parsePositiveInt(first);
-				classDays[count] = dayToIndex(dayName);
+				try {
+					int hour = Integer.parseInt(first);
+					classHours[count] = hour;
+				} catch (NumberFormatException nfe) {
+					throw new IllegalArgumentException("Invalid hour token while reading classes: '" + first + "'", nfe);
+				}
+
+				int dayIdx = dayToIndex(dayName);
+				classDays[count] = dayIdx;
 				classDayNames[count] = dayName;
 				count++;
 			}
@@ -82,9 +106,32 @@ public class Program {
 				break;
 			}
 
-			int hour = sc.nextInt();
-			int day = sc.nextInt();
-			String status = sc.next();
+			int hour;
+			int day;
+			try {
+				if (!sc.hasNextInt()) {
+					throw new IllegalArgumentException("Invalid or missing hour for student '" + name + "'");
+				}
+				hour = sc.nextInt();
+
+				if (!sc.hasNextInt()) {
+					throw new IllegalArgumentException("Invalid or missing day for student '" + name + "'");
+				}
+				day = sc.nextInt();
+			} catch (Exception e) {
+				throw new IllegalArgumentException("Error reading hour/day for '" + name + "': " + e.getMessage(), e);
+			}
+
+			String status = null;
+			if (sc.hasNext()) {
+				status = sc.next();
+			} else {
+				throw new IllegalArgumentException("Missing status for '" + name + "'");
+			}
+
+			if (!status.equals("HERE") && !status.equals("NOT_HERE")) {
+				throw new IllegalArgumentException("Invalid status token for '" + name + "': '" + status + "' (expected HERE or NOT_HERE)");
+			}
 
 			int studentIndex = findStudent(students, studentsCount, name);
 			int columnIndex = findColumn(colHour, colDay, columnsCount, hour, day);
@@ -94,6 +141,13 @@ public class Program {
 					attendance[studentIndex][columnIndex] = 1;
 				} else {
 					attendance[studentIndex][columnIndex] = -1;
+				}
+			} else {
+				if (studentIndex == -1) {
+					throw new IllegalArgumentException("Unknown student in attendance record: '" + name + "'");
+				}
+				if (columnIndex == -1) {
+					throw new IllegalArgumentException("No matching class column for " + hour + ":00 on day " + day + " (student '" + name + "')");
 				}
 			}
 		}
@@ -153,57 +207,34 @@ public class Program {
 	}
 
 	private static int firstDateInSeptember2020(int dayIndex) {
-		if (dayIndex == 1) {
-			return 7;
+		switch (dayIndex) {
+			case 1: return 7;
+			case 2: return 1;
+			case 3: return 2;
+			case 4: return 3;
+			case 5: return 4;
+			case 6: return 5;
+			default: return 6;
 		}
-		if (dayIndex == 2) {
-			return 1;
-		}
-		if (dayIndex == 3) {
-			return 2;
-		}
-		if (dayIndex == 4) {
-			return 3;
-		}
-		if (dayIndex == 5) {
-			return 4;
-		}
-		if (dayIndex == 6) {
-			return 5;
-		}
-		return 6;
 	}
 
 	private static int dayToIndex(String day) {
-		if (day.equals("MO")) {
-			return 1;
+		if (day == null) {
+			throw new IllegalArgumentException("Day name is null");
 		}
-		if (day.equals("TU")) {
-			return 2;
+		switch (day) {
+			case "MO": return 1;
+			case "TU": return 2;
+			case "WE": return 3;
+			case "TH": return 4;
+			case "FR": return 5;
+			case "SA": return 6;
+			case "SU": return 7;
+			default:
+				throw new IllegalArgumentException("Invalid day name: '" + day + "' (expected MO/TU/WE/TH/FR/SA/SU)");
 		}
-		if (day.equals("WE")) {
-			return 3;
-		}
-		if (day.equals("TH")) {
-			return 4;
-		}
-		if (day.equals("FR")) {
-			return 5;
-		}
-		if (day.equals("SA")) {
-			return 6;
-		}
-		return 7;
 	}
 
-	private static int parsePositiveInt(String s) {
-		char[] chars = s.toCharArray();
-		int num = 0;
-		for (int i = 0; i < chars.length; i++) {
-			num = num * 10 + (chars[i] - '0');
-		}
-		return num;
-	}
 
 	private static int findStudent(String[] students, int studentsCount, String name) {
 		for (int i = 0; i < studentsCount; i++) {
@@ -255,41 +286,48 @@ public class Program {
 	}
 
 	private static void printHeaderCell(int hour, String dayName, int day) {
-		System.out.print(hour);
-		System.out.print(":00 ");
-		System.out.print(dayName);
-		System.out.print(" ");
+		String s = hour + ":00 " + dayName + " ";
 		if (day < 10) {
-			System.out.print(" ");
+			s += " ";
 		}
-		System.out.print(day);
+		s += day;
+
+		if (s.length() > 10) {
+			System.out.print(s.substring(0, 10));
+		} else {
+			System.out.print(s);
+			for (int i = s.length(); i < 10; i++) {
+				System.out.print(" ");
+			}
+		}
 	}
 
 	private static void printNameCell(String name) {
 		char[] chars = name.toCharArray();
-		if (chars.length >= 2) {
-			System.out.print(chars[0]);
-			System.out.print(chars[1]);
-		} else if (chars.length == 1) {
-			System.out.print(chars[0]);
+		int toPrint = Math.min(chars.length, 10);
+		for (int i = 0; i < toPrint; i++) {
+			System.out.print(chars[i]);
 		}
-
-		int printed = chars.length >= 2 ? 2 : chars.length;
-		for (int i = printed; i < 10; i++) {
+		for (int i = toPrint; i < 10; i++) {
 			System.out.print(" ");
 		}
 	}
 
 	private static void printAttendanceCell(int value) {
-		for (int i = 0; i < 9; i++) {
-			System.out.print(" ");
+		String s;
+		switch (value) {
+			case 1: s = "1"; break;
+			case -1: s = "-1"; break;
+			default: s = ""; break;
 		}
-		if (value == 1) {
-			System.out.print("1");
-		} else if (value == -1) {
-			System.out.print("-1");
+
+		if (s.length() > 10) {
+			System.out.print(s.substring(0, 10));
 		} else {
-			System.out.print(" ");
+			for (int i = 0; i < 10 - s.length(); i++) {
+				System.out.print(" ");
+			}
+			System.out.print(s);
 		}
 	}
 }
